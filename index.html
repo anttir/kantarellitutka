@@ -121,6 +121,13 @@
         </div>
         <div class="control-group">
             <div class="control-group-header">
+                <label for="sensitivitySlider">Herkkyys</label>
+                <span class="value-display" id="sensitivityValue">50</span>
+            </div>
+            <input type="range" id="sensitivitySlider" min="0" max="100" value="50">
+        </div>
+        <div class="control-group">
+            <div class="control-group-header">
                 <label for="dimmerSlider">Taustan tummuus</label>
                 <span class="value-display" id="dimmerValue">80%</span>
             </div>
@@ -165,12 +172,14 @@
         const ui = {
             sliders: {
                 hue: document.getElementById('hueSlider'),
+                sensitivity: document.getElementById('sensitivitySlider'),
                 tolerance: document.getElementById('toleranceSlider'),
                 saturation: document.getElementById('saturationSlider'),
                 brightness: document.getElementById('brightnessSlider'),
                 dimmer: document.getElementById('dimmerSlider'),
             },
             values: {
+                sensitivity: document.getElementById('sensitivityValue'),
                 tolerance: document.getElementById('toleranceValue'),
                 saturation: document.getElementById('saturationValue'),
                 brightness: document.getElementById('brightnessValue'),
@@ -189,6 +198,7 @@
         
         const defaultSettings = {
             targetH: 40,
+            sensitivity: 50,
             tolerance: 45,
             minS: 40,
             minV: 30,
@@ -218,6 +228,10 @@
             }
             return [h * 360, s * 100, v * 100];
         }
+
+        function mapValue(value, in_min, in_max, out_min, out_max) {
+            return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        }
         
         function enterCalibrationMode() {
             isFilterActive = false;
@@ -233,11 +247,13 @@
 
         function updateUI() {
             ui.sliders.hue.value = settings.targetH;
+            ui.sliders.sensitivity.value = settings.sensitivity;
             ui.sliders.tolerance.value = settings.tolerance;
             ui.sliders.saturation.value = settings.minS;
             ui.sliders.brightness.value = settings.minV;
             ui.sliders.dimmer.value = settings.dimmer * 100;
 
+            ui.values.sensitivity.textContent = settings.sensitivity;
             ui.values.tolerance.textContent = settings.tolerance;
             ui.values.saturation.textContent = settings.minS;
             ui.values.brightness.textContent = settings.minV;
@@ -248,6 +264,11 @@
         
         function resetSettings() {
             settings = { ...defaultSettings };
+            // Varmistetaan, että myös yksinkertainen herkkyys-säädin on käytössä resetin jälkeen
+            if (ui.advancedControls.style.display === 'flex') {
+                ui.advancedToggle.click(); // Suljetaan lisäasetukset
+            }
+            ui.sliders.sensitivity.disabled = false;
             updateUI();
         }
         
@@ -304,6 +325,17 @@
             settings.targetH = parseInt(e.target.value, 10);
             updateUI();
         });
+
+        ui.sliders.sensitivity.addEventListener('input', e => {
+            const value = parseInt(e.target.value, 10);
+            settings.sensitivity = value;
+            // Ohjataan lisäasetuksia tämän yhden säätimen kautta
+            settings.tolerance = Math.round(mapValue(value, 0, 100, 15, 70));
+            settings.minS = Math.round(mapValue(value, 0, 100, 50, 20));
+            settings.minV = Math.round(mapValue(value, 0, 100, 40, 15));
+            updateUI();
+        });
+
         ui.sliders.tolerance.addEventListener('input', e => {
             settings.tolerance = parseInt(e.target.value, 10);
             updateUI();
@@ -326,6 +358,8 @@
         ui.advancedToggle.addEventListener('click', () => {
             const isVisible = ui.advancedControls.style.display === 'flex';
             ui.advancedControls.style.display = isVisible ? 'none' : 'flex';
+            // Kun lisäasetukset avataan, poistetaan yksinkertainen herkkyys-säädin käytöstä
+            ui.sliders.sensitivity.disabled = !isVisible;
             ui.advancedToggle.textContent = isVisible ? 'Lisäasetukset' : 'Piilota lisäasetukset';
         });
 
@@ -342,14 +376,13 @@
             const pixel = ctx.getImageData(x, y, 1, 1).data;
             const [h, s, v] = rgbToHsv(pixel[0], pixel[1], pixel[2]);
             
-            settings.targetH = h;
+            settings.targetH = Math.round(h);
             updateUI();
             exitCalibrationMode();
         });
 
         // --- Initialization ---
         resetSettings();
-        startCamera();
     </script>
 </body>
 </html>
