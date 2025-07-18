@@ -1,373 +1,526 @@
 <!DOCTYPE html>
 <html lang="fi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
     <title>Kantarellitutka 🍄</title>
     <style>
-        :root {
-            --brand-orange: #ff9800;
-        }
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #2c2c2c;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        #videoContainer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        }
-        /* KORJATTU: Piilotetaan video siirtämällä se pois ruudulta display:none sijaan */
-        video {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            left: -9999px;
-            top: -9999px;
-        }
-        canvas {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            min-width: 100%; min-height: 100%;
-            width: auto; height: auto;
-            object-fit: cover;
-        }
-        canvas.calibrating {
-            border: 4px solid var(--brand-orange);
-            box-sizing: border-box;
-        }
-        #controls {
-            position: absolute;
-            bottom: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
-            padding: 15px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 90%;
-            max-width: 420px;
-        }
-        .control-group { display: flex; flex-direction: column; }
-        label { margin-bottom: 8px; font-size: 0.9em; font-weight: 500; }
-        input[type="range"] { width: 100%; margin: 0; }
-        .button-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        .button {
-            padding: 10px 15px;
-            background-color: #444;
-            border: none; border-radius: 8px;
-            color: white; font-weight: bold; cursor: pointer;
-            text-align: center; transition: background-color 0.2s;
-            flex-grow: 1;
-        }
-        .button:hover { background-color: #555; }
-        #colorPreview {
-            width: 40px; height: 40px;
-            border: 2px solid white; border-radius: 8px;
-            cursor: pointer;
-        }
-        #advancedToggle { font-size: 0.8em; color: #ccc; cursor: pointer; text-decoration: underline; text-align: center; margin-top: 5px; }
-        #advancedControls { display: none; flex-direction: column; gap: 15px; border-top: 1px solid #555; padding-top: 15px;}
-        #infoContainer {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: none; /* Hidden by default */
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            width: 90%;
-            z-index: 10;
-        }
-        #infoBox {
-            background: var(--brand-orange); color: black;
-            padding: 10px 15px; border-radius: 8px; font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-        #cancelCalibrateButton {
-            background-color: #555;
-            padding: 8px 20px;
-        }
+      :root {
+        --brand-orange: #ff9800;
+      }
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #2c2c2c;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      #videoContainer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      video {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        left: -9999px;
+        top: -9999px;
+      }
+      canvas {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: cover;
+      }
+      canvas.calibrating {
+        border: 4px solid var(--brand-orange);
+        box-sizing: border-box;
+      }
+      #controls {
+        position: absolute;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        padding: 15px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        width: 90%;
+        max-width: 420px;
+      }
+      .control-group {
+        display: flex;
+        flex-direction: column;
+      }
+      label {
+        margin-bottom: 8px;
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+      input[type="range"] {
+        width: 100%;
+        margin: 0;
+      }
+      .button-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+      .button {
+        padding: 10px 15px;
+        background-color: #444;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        text-align: center;
+        transition: background-color 0.2s;
+        flex-grow: 1;
+      }
+      .button:hover {
+        background-color: #555;
+      }
+      #colorPreview {
+        width: 40px;
+        height: 40px;
+        border: 2px solid white;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      #advancedToggle {
+        font-size: 0.8em;
+        color: #ccc;
+        cursor: pointer;
+        text-decoration: underline;
+        text-align: center;
+        margin-top: 5px;
+      }
+      #advancedControls {
+        display: none;
+        flex-direction: column;
+        gap: 15px;
+        border-top: 1px solid #555;
+        padding-top: 15px;
+      }
+      #infoContainer {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: none; /* Hidden by default */
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: 90%;
+        z-index: 10;
+      }
+      #infoBox {
+        background: var(--brand-orange);
+        color: black;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-weight: bold;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      }
+      #cancelCalibrateButton {
+        background-color: #555;
+        padding: 8px 20px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="videoContainer">
-        <video id="video" playsinline autoplay muted></video>
-        <canvas id="canvas"></canvas>
+      <video id="video" playsinline autoplay muted></video>
+      <canvas id="canvas"></canvas>
     </div>
 
     <div id="infoContainer">
-        <div id="infoBox">Poimi väri napauttamalla näyttöä</div>
-        <div id="cancelCalibrateButton" class="button">Peruuta</div>
+      <div id="infoBox">Poimi väri napauttamalla näyttöä</div>
+      <div id="cancelCalibrateButton" class="button">Peruuta</div>
     </div>
 
     <div id="controls">
-        <!-- Hidden color input -->
-        <input type="color" id="colorPicker" style="display: none;">
-        
-        <!-- Main Controls -->
+      <input type="color" id="colorPicker" style="display: none" />
+
+      <div class="control-group">
+        <label for="sensitivitySlider"
+          >Herkkyys: <span id="sensitivityValue">50</span></label
+        >
+        <input
+          type="range"
+          id="sensitivitySlider"
+          min="0"
+          max="100"
+          value="50"
+        />
+      </div>
+      <div class="control-group">
+        <label for="dimmerSlider"
+          >Taustan tummuus: <span id="dimmerValue">80</span>%</label
+        >
+        <input type="range" id="dimmerSlider" min="20" max="100" value="80" />
+      </div>
+      <div class="button-row">
+        <div id="calibrateButton" class="button">Poimi Väri</div>
+        <div id="resetButton" class="button">Nollaa</div>
+        <div id="colorPreview"></div>
+      </div>
+      <div id="advancedToggle">Lisäasetukset</div>
+      <div id="advancedControls">
         <div class="control-group">
-            <label for="sensitivitySlider">Herkkyys: <span id="sensitivityValue">50</span></label>
-            <input type="range" id="sensitivitySlider" min="0" max="100" value="50">
+          <label for="toleranceSlider"
+            >Värisävyherkkyys: <span id="toleranceValue">45</span></label
+          >
+          <input
+            type="range"
+            id="toleranceSlider"
+            min="1"
+            max="100"
+            value="45"
+          />
         </div>
         <div class="control-group">
-            <label for="dimmerSlider">Taustan tummuus: <span id="dimmerValue">80</span>%</label>
-            <input type="range" id="dimmerSlider" min="20" max="100" value="80">
+          <label for="saturationSlider"
+            >Värikylläisyyden alaraja:
+            <span id="saturationValue">40</span></label
+          >
+          <input
+            type="range"
+            id="saturationSlider"
+            min="0"
+            max="100"
+            value="40"
+          />
         </div>
-        <div class="button-row">
-            <div id="calibrateButton" class="button">Poimi Väri</div>
-            <div id="resetButton" class="button">Nollaa</div>
-            <div id="colorPreview"></div>
+        <div class="control-group">
+          <label for="brightnessSlider"
+            >Kirkkauden alaraja: <span id="brightnessValue">30</span></label
+          >
+          <input
+            type="range"
+            id="brightnessSlider"
+            min="0"
+            max="100"
+            value="30"
+          />
         </div>
-        <div id="advancedToggle">Lisäasetukset</div>
-        <!-- Advanced Controls (hidden) -->
-        <div id="advancedControls">
-            <div class="control-group">
-                <label for="toleranceSlider">Värisävyherkkyys: <span id="toleranceValue">45</span></label>
-                <input type="range" id="toleranceSlider" min="1" max="100" value="45">
-            </div>
-            <div class="control-group">
-                <label for="saturationSlider">Värikylläisyyden alaraja: <span id="saturationValue">40</span></label>
-                <input type="range" id="saturationSlider" min="0" max="100" value="40">
-            </div>
-            <div class="control-group">
-                <label for="brightnessSlider">Kirkkauden alaraja: <span id="brightnessValue">30</span></label>
-                <input type="range" id="brightnessSlider" min="0" max="100" value="30">
-            </div>
-        </div>
+      </div>
     </div>
 
     <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-        // --- Element references ---
-        const controls = {
-            sensitivity: document.getElementById('sensitivitySlider'),
-            dimmer: document.getElementById('dimmerSlider'),
-            tolerance: document.getElementById('toleranceSlider'),
-            saturation: document.getElementById('saturationSlider'),
-            brightness: document.getElementById('brightnessSlider'),
-            calibrateBtn: document.getElementById('calibrateButton'),
-            resetBtn: document.getElementById('resetButton'),
-            cancelCalibrateBtn: document.getElementById('cancelCalibrateButton'),
-            colorPreview: document.getElementById('colorPreview'),
-            colorPicker: document.getElementById('colorPicker'),
-            advancedToggle: document.getElementById('advancedToggle'),
-            advancedControls: document.getElementById('advancedControls'),
-            infoContainer: document.getElementById('infoContainer'),
-            values: {
-                sensitivity: document.getElementById('sensitivityValue'),
-                dimmer: document.getElementById('dimmerValue'),
-                tolerance: document.getElementById('toleranceValue'),
-                saturation: document.getElementById('saturationValue'),
-                brightness: document.getElementById('brightnessValue'),
+      const controls = {
+        sensitivity: document.getElementById("sensitivitySlider"),
+        dimmer: document.getElementById("dimmerSlider"),
+        tolerance: document.getElementById("toleranceSlider"),
+        saturation: document.getElementById("saturationSlider"),
+        brightness: document.getElementById("brightnessSlider"),
+        calibrateBtn: document.getElementById("calibrateButton"),
+        resetBtn: document.getElementById("resetButton"),
+        cancelCalibrateBtn: document.getElementById("cancelCalibrateButton"),
+        colorPreview: document.getElementById("colorPreview"),
+        colorPicker: document.getElementById("colorPicker"),
+        advancedToggle: document.getElementById("advancedToggle"),
+        advancedControls: document.getElementById("advancedControls"),
+        infoContainer: document.getElementById("infoContainer"),
+        values: {
+          sensitivity: document.getElementById("sensitivityValue"),
+          dimmer: document.getElementById("dimmerValue"),
+          tolerance: document.getElementById("toleranceValue"),
+          saturation: document.getElementById("saturationValue"),
+          brightness: document.getElementById("brightnessValue"),
+        },
+      };
+
+      const defaultSettings = {
+        targetH: 40,
+        minS: 40,
+        minV: 30,
+        tolerance: 45,
+        dimmer: 0.8,
+        sensitivity: 50,
+        color: "rgb(255, 180, 40)",
+      };
+      let settings = { ...defaultSettings };
+      let isFilterActive = true;
+      let advancedMode = false;
+
+      function rgbToHsv(r, g, b) {
+        (r /= 255), (g /= 255), (b /= 255);
+        let max = Math.max(r, g, b),
+          min = Math.min(r, g, b);
+        let h,
+          s,
+          v = max;
+        let d = max - min;
+        s = max === 0 ? 0 : d / max;
+        if (max === min) {
+          h = 0;
+        } else {
+          switch (max) {
+            case r:
+              h = (g - b) / d + (g < b ? 6 : 0);
+              break;
+            case g:
+              h = (b - r) / d + 2;
+              break;
+            case b:
+              h = (r - g) / d + 4;
+              break;
+          }
+          h /= 6;
+        }
+        return [h * 360, s * 100, v * 100];
+      }
+
+      function hexToRgbString(hex) {
+        let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result
+          ? `rgb(${parseInt(result[1], 16)}, ${parseInt(
+              result[2],
+              16
+            )}, ${parseInt(result[3], 16)})`
+          : null;
+      }
+
+      function rgbStringToRgb(rgbString) {
+        let match = rgbString.match(/rgb\((\d{1,3}), (\d{1,3}), (\d{1,3})\)/);
+        return match
+          ? {
+              r: parseInt(match[1]),
+              g: parseInt(match[2]),
+              b: parseInt(match[3]),
             }
-        };
-        
-        // --- State and settings ---
-        const defaultSettings = {
-            targetH: 40, minS: 40, minV: 30, tolerance: 45, dimmer: 0.8, sensitivity: 50,
-            color: 'rgb(255, 180, 40)'
-        };
-        let settings = { ...defaultSettings };
-        let isFilterActive = true;
-        let advancedMode = false;
+          : { r: 0, g: 0, b: 0 };
+      }
 
-        // --- Helper functions ---
-        function rgbToHsv(r, g, b) {
-            r /= 255, g /= 255, b /= 255;
-            let max = Math.max(r, g, b), min = Math.min(r, g, b);
-            let h, s, v = max;
-            let d = max - min;
-            s = max === 0 ? 0 : d / max;
-            if (max === min) { h = 0; }
-            else {
-                switch (max) {
-                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                    case g: h = (b - r) / d + 2; break;
-                    case b: h = (r - g) / d + 4; break;
-                }
-                h /= 6;
-            }
-            return [h * 360, s * 100, v * 100];
-        }
-        
-        function hexToRgbString(hex) {
-            let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? `rgb(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)})` : null;
-        }
+      function mapValue(value, in_min, in_max, out_min, out_max) {
+        return (
+          ((value - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min
+        );
+      }
 
-        function rgbStringToRgb(rgbString) {
-            let match = rgbString.match(/rgb\((\d{1,3}), (\d{1,3}), (\d{1,3})\)/);
-            return match ? { r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]) } : {r:0,g:0,b:0};
-        }
-        
-        function mapValue(value, in_min, in_max, out_min, out_max) {
-            return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-        }
+      function enterCalibrationMode() {
+        isFilterActive = false;
+        controls.infoContainer.style.display = "flex";
+        canvas.classList.add("calibrating");
+      }
 
-        // --- State management functions ---
-        function enterCalibrationMode() {
-            isFilterActive = false;
-            controls.infoContainer.style.display = 'flex';
-            canvas.classList.add('calibrating');
-        }
-        
-        function exitCalibrationMode() {
-            isFilterActive = true;
-            controls.infoContainer.style.display = 'none';
-            canvas.classList.remove('calibrating');
-        }
+      function exitCalibrationMode() {
+        isFilterActive = true;
+        controls.infoContainer.style.display = "none";
+        canvas.classList.remove("calibrating");
+      }
 
-        // --- UI and settings update functions ---
-        function updateUI() {
-            controls.sensitivity.value = settings.sensitivity;
-            controls.dimmer.value = settings.dimmer * 100;
-            controls.tolerance.value = settings.tolerance;
-            controls.saturation.value = settings.minS;
-            controls.brightness.value = settings.minV;
-            controls.colorPreview.style.backgroundColor = settings.color;
+      function updateUI() {
+        controls.sensitivity.value = settings.sensitivity;
+        controls.dimmer.value = settings.dimmer * 100;
+        controls.tolerance.value = settings.tolerance;
+        controls.saturation.value = settings.minS;
+        controls.brightness.value = settings.minV;
+        controls.colorPreview.style.backgroundColor = settings.color;
 
-            controls.values.sensitivity.textContent = settings.sensitivity;
-            controls.values.dimmer.textContent = `${Math.round(settings.dimmer * 100)}%`;
-            controls.values.tolerance.textContent = Math.round(settings.tolerance);
-            controls.values.saturation.textContent = Math.round(settings.minS);
-            controls.values.brightness.textContent = Math.round(settings.minV);
-        }
-        
-        function updateTargetColor(colorString) {
-            settings.color = colorString;
-            const {r, g, b} = rgbStringToRgb(colorString);
-            const [h, s, v] = rgbToHsv(r, g, b);
-            settings.targetH = h;
-            updateUI();
-        }
-        
-        function resetSettings() {
-            settings = { ...defaultSettings };
-            updateTargetColor(defaultSettings.color); // This now also resets the color
-        }
-        
-        // --- Core logic: Camera and Frame Processing ---
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                video.srcObject = stream;
-                video.addEventListener('loadedmetadata', () => requestAnimationFrame(processFrame));
-            } catch (err) {
-                console.error("Camera error:", err);
-                alert("Kameran käyttö vaatii luvan ja HTTPS-yhteyden. Varmista, että olet sallinut kameran käytön selaimen asetuksista.");
-            }
-        }
+        controls.values.sensitivity.textContent = settings.sensitivity;
+        controls.values.dimmer.textContent = `${Math.round(
+          settings.dimmer * 100
+        )}%`;
+        controls.values.tolerance.textContent = Math.round(settings.tolerance);
+        controls.values.saturation.textContent = Math.round(settings.minS);
+        controls.values.brightness.textContent = Math.round(settings.minV);
+      }
 
-        function processFrame() {
-            if (video.readyState < 2) { requestAnimationFrame(processFrame); return; }
-            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            }
+      function updateTargetColor(colorString) {
+        settings.color = colorString;
+        const { r, g, b } = rgbStringToRgb(colorString);
+        const [h, s, v] = rgbToHsv(r, g, b);
+        settings.targetH = h;
+        updateUI();
+      }
 
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            if (!isFilterActive) { // If calibrating, show original video and stop
-                requestAnimationFrame(processFrame);
-                return;
-            }
+      function resetSettings() {
+        settings = { ...defaultSettings };
+        updateTargetColor(defaultSettings.color);
+      }
 
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i], g = data[i + 1], b = data[i + 2];
-                const [h, s, v] = rgbToHsv(r, g, b);
-                const hueDiff = Math.min(Math.abs(h - settings.targetH), 360 - Math.abs(h - settings.targetH));
-
-                if (hueDiff < settings.tolerance && s > settings.minS && v > settings.minV) {
-                    // Color matches, do nothing
-                } else {
-                    const gray = (0.299 * r + 0.587 * g + 0.114 * b) * settings.dimmer;
-                    data[i] = data[i + 1] = data[i + 2] = gray;
-                }
-            }
-            ctx.putImageData(imageData, 0, 0);
+      async function startCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+          });
+          video.srcObject = stream;
+          // KORJATTU: Käytetään onloadedmetadata-tapahtumaa ja kutsutaan .play() manuaalisesti.
+          // Tämä on luotettavampi tapa käynnistää video mobiiliselaimissa.
+          video.onloadedmetadata = () => {
+            video.play().catch((err) => {
+              console.error("Videon automaattinen toisto epäonnistui:", err);
+              alert(
+                "Kameran käynnistys epäonnistui. Varmista, että olet antanut luvan kameran käyttöön selaimen asetuksista."
+              );
+            });
             requestAnimationFrame(processFrame);
+          };
+        } catch (err) {
+          console.error("Kameran käyttöoikeusvirhe:", err);
+          alert(
+            "Kameran käyttö vaatii luvan. Salli kameran käyttö selaimen asetuksista ja päivitä sivu."
+          );
+        }
+      }
+
+      function processFrame() {
+        // KORJATTU: Varmistetaan, että videolla on validi koko ennen piirtämistä.
+        if (video.readyState < 2 || video.videoWidth === 0) {
+          requestAnimationFrame(processFrame);
+          return;
+        }
+        if (
+          canvas.width !== video.videoWidth ||
+          canvas.height !== video.videoHeight
+        ) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
         }
 
-        // --- Event Listeners ---
-        controls.sensitivity.addEventListener('input', e => {
-            if (advancedMode) return;
-            const value = parseInt(e.target.value, 10);
-            settings.sensitivity = value;
-            settings.tolerance = mapValue(value, 0, 100, 15, 70);
-            settings.minS = mapValue(value, 0, 100, 50, 20);
-            settings.minV = mapValue(value, 0, 100, 40, 15);
-            updateUI();
-        });
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        controls.dimmer.addEventListener('input', e => {
-            settings.dimmer = parseInt(e.target.value, 10) / 100;
-            updateUI();
-        });
-        
-        controls.tolerance.addEventListener('input', e => { settings.tolerance = parseInt(e.target.value, 10); updateUI(); });
-        controls.saturation.addEventListener('input', e => { settings.minS = parseInt(e.target.value, 10); updateUI(); });
-        controls.brightness.addEventListener('input', e => { settings.minV = parseInt(e.target.value, 10); updateUI(); });
-        
-        controls.resetBtn.addEventListener('click', resetSettings);
-        
-        controls.advancedToggle.addEventListener('click', () => {
-            advancedMode = !advancedMode;
-            controls.advancedControls.style.display = advancedMode ? 'flex' : 'none';
-            controls.sensitivity.disabled = advancedMode;
-            controls.advancedToggle.textContent = advancedMode ? 'Piilota lisäasetukset' : 'Lisäasetukset';
-        });
+        if (!isFilterActive) {
+          requestAnimationFrame(processFrame);
+          return;
+        }
 
-        controls.calibrateBtn.addEventListener('click', enterCalibrationMode);
-        controls.cancelCalibrateBtn.addEventListener('click', exitCalibrationMode);
-        
-        controls.colorPreview.addEventListener('click', () => {
-            controls.colorPicker.click(); // Programmatically open the native color picker
-        });
-        
-        controls.colorPicker.addEventListener('input', e => {
-            const newColor = hexToRgbString(e.target.value);
-            if (newColor) {
-                updateTargetColor(newColor);
-            }
-        });
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
 
-        canvas.addEventListener('click', event => {
-            if (isFilterActive) return; // Only pick color when filter is off
-            const rect = canvas.getBoundingClientRect();
-            const x = Math.round((event.clientX - rect.left) * (canvas.width / rect.width));
-            const y = Math.round((event.clientY - rect.top) * (canvas.height / rect.height));
-            
-            // We need to get the color from the original video frame, not the canvas
-            // So we draw a temporary frame to get the pixel data
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const pixel = ctx.getImageData(x, y, 1, 1).data;
-            updateTargetColor(`rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`);
-            
-            exitCalibrationMode();
-        });
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i],
+            g = data[i + 1],
+            b = data[i + 2];
+          const [h, s, v] = rgbToHsv(r, g, b);
+          const hueDiff = Math.min(
+            Math.abs(h - settings.targetH),
+            360 - Math.abs(h - settings.targetH)
+          );
 
-        // --- Initialization ---
-        resetSettings();
-        startCamera();
+          if (
+            hueDiff < settings.tolerance &&
+            s > settings.minS &&
+            v > settings.minV
+          ) {
+            // Color matches
+          } else {
+            const gray = (0.299 * r + 0.587 * g + 0.114 * b) * settings.dimmer;
+            data[i] = data[i + 1] = data[i + 2] = gray;
+          }
+        }
+        ctx.putImageData(imageData, 0, 0);
+        requestAnimationFrame(processFrame);
+      }
+
+      controls.sensitivity.addEventListener("input", (e) => {
+        if (advancedMode) return;
+        const value = parseInt(e.target.value, 10);
+        settings.sensitivity = value;
+        settings.tolerance = mapValue(value, 0, 100, 15, 70);
+        settings.minS = mapValue(value, 0, 100, 50, 20);
+        settings.minV = mapValue(value, 0, 100, 40, 15);
+        updateUI();
+      });
+
+      controls.dimmer.addEventListener("input", (e) => {
+        settings.dimmer = parseInt(e.target.value, 10) / 100;
+        updateUI();
+      });
+
+      controls.tolerance.addEventListener("input", (e) => {
+        settings.tolerance = parseInt(e.target.value, 10);
+        updateUI();
+      });
+      controls.saturation.addEventListener("input", (e) => {
+        settings.minS = parseInt(e.target.value, 10);
+        updateUI();
+      });
+      controls.brightness.addEventListener("input", (e) => {
+        settings.minV = parseInt(e.target.value, 10);
+        updateUI();
+      });
+
+      controls.resetBtn.addEventListener("click", resetSettings);
+
+      controls.advancedToggle.addEventListener("click", () => {
+        advancedMode = !advancedMode;
+        controls.advancedControls.style.display = advancedMode
+          ? "flex"
+          : "none";
+        controls.sensitivity.disabled = advancedMode;
+        controls.advancedToggle.textContent = advancedMode
+          ? "Piilota lisäasetukset"
+          : "Lisäasetukset";
+      });
+
+      controls.calibrateBtn.addEventListener("click", enterCalibrationMode);
+      controls.cancelCalibrateBtn.addEventListener(
+        "click",
+        exitCalibrationMode
+      );
+
+      controls.colorPreview.addEventListener("click", () => {
+        controls.colorPicker.click();
+      });
+
+      controls.colorPicker.addEventListener("input", (e) => {
+        const newColor = hexToRgbString(e.target.value);
+        if (newColor) {
+          updateTargetColor(newColor);
+        }
+      });
+
+      canvas.addEventListener("click", (event) => {
+        if (isFilterActive) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.round(
+          (event.clientX - rect.left) * (canvas.width / rect.width)
+        );
+        const y = Math.round(
+          (event.clientY - rect.top) * (canvas.height / rect.height)
+        );
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const pixel = ctx.getImageData(x, y, 1, 1).data;
+        updateTargetColor(`rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`);
+
+        exitCalibrationMode();
+      });
+
+      resetSettings();
+      startCamera();
     </script>
-</body>
+  </body>
 </html>
