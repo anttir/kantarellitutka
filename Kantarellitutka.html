@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Kantarellitutka 🍄</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #2c2c2c;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #videoContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        video, canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: cover;
+        }
+        #controls {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.75);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 90%;
+            max-width: 420px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 0;
+        }
+        #calibrateButton {
+            padding: 12px;
+            background-color: #ff9800;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+        #calibrateButton:hover {
+            background-color: #fb8c00;
+        }
+        #colorPreview {
+            width: 32px;
+            height: 32px;
+            border: 2px solid white;
+            border-radius: 8px;
+            background-color: rgb(255, 180, 40); /* Oletusväri */
+        }
+        #infoBox {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 152, 0, 0.9);
+            color: black;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            display: none; /* Piilotettu oletuksena */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="videoContainer">
+        <video id="video" playsinline autoplay muted></video>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div id="infoBox">Poimi väri napauttamalla näyttöä</div>
+
+    <div id="controls">
+        <div class="control-group">
+            <label for="toleranceSlider">Värisävyherkkyys: <span id="toleranceValue">45</span></label>
+            <input type="range" id="toleranceSlider" min="1" max="100" value="45">
+        </div>
+        <div class="control-group">
+            <label for="saturationSlider">Värikylläisyyden alaraja: <span id="saturationValue">40</span></label>
+            <input type="range" id="saturationSlider" min="0" max="100" value="40">
+        </div>
+        <div class="control-group">
+            <label for="brightnessSlider">Kirkkauden alaraja: <span id="brightnessValue">30</span></label>
+            <input type="range" id="brightnessSlider" min="0" max="100" value="30">
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+            <div id="calibrateButton">Kalibroi väri kamerasta</div>
+            <div id="colorPreview"></div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        const toleranceSlider = document.getElementById('toleranceSlider');
+        const saturationSlider = document.getElementById('saturationSlider');
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        const calibrateButton = document.getElementById('calibrateButton');
+        const colorPreview = document.getElementById('colorPreview');
+        const infoBox = document.getElementById('infoBox');
+
+        const toleranceValue = document.getElementById('toleranceValue');
+        const saturationValue = document.getElementById('saturationValue');
+        const brightnessValue = document.getElementById('brightnessValue');
+
+        // Oletusarvot kantarellille
+        let targetH = 40; // Sävy (Hue)
+        let minS = 40;  // Kylläisyys (Saturation)
+        let minV = 30;  // Kirkkaus (Value/Brightness)
+        let tolerance = 45;
+
+        let isCalibrating = false;
+
+        // Aseta liukusäätimien ja niiden arvonäyttöjen alkutilat
+        toleranceValue.textContent = toleranceSlider.value;
+        saturationValue.textContent = saturationSlider.value;
+        brightnessValue.textContent = brightnessSlider.value;
+
+        // Funktio, joka muuntaa RGB-värin HSV-muotoon (Hue, Saturation, Value)
+        function rgbToHsv(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            let max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, v = max;
+            let d = max - min;
+            s = max === 0 ? 0 : d / max;
+            if (max === min) {
+                h = 0;
+            } else {
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return [h * 360, s * 100, v * 100];
+        }
+
+        // Käynnistetään kamera
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' } // Pyydetään laitteen takakameraa
+                });
+                video.srcObject = stream;
+                video.addEventListener('loadedmetadata', () => {
+                    requestAnimationFrame(processFrame);
+                });
+            } catch (err) {
+                console.error("Kameran avaaminen epäonnistui:", err);
+                alert("Kameran käyttö vaatii luvan ja HTTPS-yhteyden. Varmista, että olet sallinut kameran käytön selaimen asetuksista.");
+            }
+        }
+
+        // Reaaliaikainen kuvan käsittely
+        function processFrame() {
+            if (video.readyState < 2) {
+                requestAnimationFrame(processFrame);
+                return;
+            }
+            
+            // Säädetään canvasin koko vastaamaan videon todellista kokoa
+            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+            }
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const [h, s, v] = rgbToHsv(r, g, b);
+
+                // Lasketaan sävyero ympyräasteikolla (0-360)
+                const hueDiff = Math.min(Math.abs(h - targetH), 360 - Math.abs(h - targetH));
+
+                if (hueDiff < tolerance && s > minS && v > minV) {
+                    // Väri täsmää, jätetään se ennalleen. Voit jopa korostaa sitä lisäämällä kirkkautta, esim:
+                    // data[i] = Math.min(255, r * 1.2);
+                    // data[i+1] = Math.min(255, g * 1.2);
+                } else {
+                    // Muutetaan pikseli harmaasävyksi
+                    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                    data[i] = data[i + 1] = data[i + 2] = gray;
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+            requestAnimationFrame(processFrame);
+        }
+
+        // Liukusäätimien kuuntelijat
+        toleranceSlider.addEventListener('input', e => {
+            tolerance = parseInt(e.target.value, 10);
+            toleranceValue.textContent = e.target.value;
+        });
+        saturationSlider.addEventListener('input', e => {
+            minS = parseInt(e.target.value, 10);
+            saturationValue.textContent = e.target.value;
+        });
+        brightnessSlider.addEventListener('input', e => {
+            minV = parseInt(e.target.value, 10);
+            brightnessValue.textContent = e.target.value;
+        });
+
+        // Kalibrointinapin kuuntelija
+        calibrateButton.addEventListener('click', () => {
+            isCalibrating = true;
+            infoBox.style.display = 'block';
+        });
+
+        // Värin poiminta napauttamalla näyttöä
+        canvas.addEventListener('click', event => {
+            if (!isCalibrating) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.round((event.clientX - rect.left) * (canvas.width / rect.width));
+            const y = Math.round((event.clientY - rect.top) * (canvas.height / rect.height));
+
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            const [r, g, b] = pixel;
+            const [h, s, v] = rgbToHsv(r, g, b);
+            
+            targetH = h;
+            console.log(`Uusi kohdeväri poimittu (HSV): ${h.toFixed(0)}, ${s.toFixed(0)}%, ${v.toFixed(0)}%`);
+            colorPreview.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+            isCalibrating = false;
+            infoBox.style.display = 'none';
+        });
+
+        startCamera();
+    </script>
+</body>
+</html>
